@@ -1,9 +1,6 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import React from 'react'
-import Balance from '../components/Balance'
-import Search from '../components/Search'
-import Orders from '../components/Orders'
 import Header from '@/components/Header'
 import Vendors from '../components/Vendors'
 import Footer from '@/components/Footer'
@@ -18,8 +15,8 @@ const Home: NextPage = () => {
       <Header />
 
       <div className="flex items-center flex-col flex-grow">
-        <Balance />
-        <Search />
+        {/* <Balance /> */}
+        {/* <Search /> */}
         <Vendors />
       </div>
       <Footer />
