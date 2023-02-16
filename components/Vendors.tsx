@@ -1,9 +1,17 @@
 import { useEffect, useState } from 'react'
 import { formatUnits } from '@ethersproject/units'
-import { Contract } from 'zksync-web3'
-import { ethers } from 'ethers'
+/* import { Contract } from 'zksync-web3' */
+import { ethers, Contract } from 'ethers'
+import { ERC20__factory } from '@/app/contracts'
+import _ from 'lodash'
 
-import ERC20ABI from '../abi/ERC20.json' assert { type: 'json' }
+interface Vendor {
+  address: string
+  id: number
+  transactions: object[]
+  balance: number
+  userCount: number
+}
 
 const Vendors = () => {
   const provider = new ethers.providers.JsonRpcProvider('https://zksync2-testnet.zksync.dev')
@@ -13,24 +21,33 @@ const Vendors = () => {
     '0x0dc01C03207fB73937B4aC88d840fBBB32e8026d',
     '0x7EBa38e027Fa14ecCd87B8c56a49Fa75E04e7B6e',
   ]
-  const buidlContract = new Contract(buidlTokenAddress, ERC20ABI, signer)
+
+  let vendors: Vendor[] = []
+
+  const buidlContract = ERC20__factory.connect(buidlTokenAddress, signer)
 
   //Get the buidl contract BUIDL balance.
   const [buidlTokenBalance, setBuidltokenBalance] = useState<number>()
   const [vendor1Balance, setVendor1Balance] = useState<number>()
   const [vendor2Balance, setVendor2Balance] = useState<number>()
-  const vendor1Transfers: any = []
-  const vendor2Transfers: any = []
+  const [vendor1Count, setVendor1Count] = useState<number>()
+  const [vendor1Uniques, setVendor1Uniques] = useState<number>()
+  const [vendorData, setVendorData] = useState<Vendor[]>()
+  const [loaded, setLoaded] = useState<boolean>()
 
   useEffect(() => {
     getBalance()
   })
 
+  useEffect(() => {
+    getTransactions()
+  }, [])
+
   let totalSupply
   console.log('Total supply', totalSupply)
 
   async function getBalance() {
-    totalSupply = buidlContract && (await buidlContract.totalSupply)
+    totalSupply = buidlContract && buidlContract.totalSupply
     const buidlTokenBalance =
       buidlTokenAddress && buidlContract && (await buidlContract.balanceOf(buidlTokenAddress))
     const buidlBalance = formatUnits(buidlTokenBalance, 2)
@@ -45,31 +62,54 @@ const Vendors = () => {
     setVendor2Balance(Number(vendor2Balance))
   }
 
-  buidlContract.on('Transfer', (from, to, value, event) => {
-    const transferEvent = {
-      from: from,
-      to: to,
-      value: value,
-      eventData: event,
+  async function getTransactions() {
+    for (let i = 0; i < vendorAddresses.length; i++) {
+      let balance = (await buidlContract.balanceOf(vendorAddresses[i])).toNumber()
+      vendors.push({
+        address: vendorAddresses[i],
+        id: i,
+        transactions: [],
+        balance: balance,
+        userCount: 0,
+      })
     }
-    if (to == vendorAddresses[0]) {
-      // vendor1Transfers.push(JSON.stringify(transferEvent, null, 4));
-      console.log(from, formatUnits(value, 2))
-    } else if (to == vendorAddresses[1]) {
-      vendor2Transfers.push(JSON.stringify(transferEvent, null, 4))
-    } else {
-      console.log(JSON.stringify(transferEvent))
+
+    const bFilter = buidlContract.filters.Transfer()
+    const block = await provider.getBlockNumber()
+
+    const transfers = await buidlContract.queryFilter(bFilter, 600, block)
+
+    for (let t of transfers) {
+      for (let v of vendors) {
+        if (t.args.to == v.address) {
+          v.transactions.push(t)
+        }
+      }
     }
-  })
-  console.log('vendor 1: ', vendor1Transfers[0])
-  console.log('vendor 2: ', vendor2Transfers[0])
+
+    for (let i = 0; i < vendors.length; i++) {
+      const v1uniq = _.uniqBy(vendors[i].transactions, 'args.from')
+      vendors[i].userCount = v1uniq.length
+    }
+
+    setVendor1Count(vendors[0].transactions.length)
+
+    setLoaded(true)
+    setVendorData(vendors)
+  }
 
   return (
     <div className="w-full p-4 flex flex-col rounded-2xl bg-blue-900 text-white min-h-full">
-      <div className="w-full ">
-        <p>Buidl contract Balance: BUIDL {buidlTokenBalance || 'Loading...'}</p>
-        <p>Vendor1 Balance: BUIDL {vendor1Balance || 'Loading...'}</p>
-        <p>Vendor2 Balance: BUIDL {vendor2Balance || 'Loading...'}</p>
+      <div>
+        {loaded == true && vendorData
+          ? vendorData.map((v, i) => (
+              <p>
+                <h1 className="font-extrabold">Vendor {i}: </h1> Balance:{' '}
+                {v.balance || 'Loading...'} | TxCount: {v.transactions.length || 'Loading...'} |
+                Unique Users: {v.userCount}
+              </p>
+            ))
+          : 'Loading'}
       </div>
     </div>
   )
