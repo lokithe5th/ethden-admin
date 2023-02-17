@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ethers } from 'ethers'
-import { ERC20__factory } from '@/app/contracts'
+import { ERC20__factory } from '@/interfaces/contracts'
 import Balance from '../components/Balance'
 import Search from '../components/Search'
 import _ from 'lodash'
@@ -36,7 +36,7 @@ const Vendors = () => {
   // Initialize data
   useEffect(() => {
     getTransactions()
-  }, [])
+  })
 
   // Update on event listener
   useEffect(() => {
@@ -67,7 +67,7 @@ const Vendors = () => {
 
     for (let t of transfers) {
       for (let v of vendors) {
-        if (t.args.to == v.address) {
+        if (t.args.to === v.address) {
           v.transactions.push(t)
         }
       }
@@ -94,12 +94,10 @@ const Vendors = () => {
         <div>
           {vendorData ? (
             vendorData.map((v, i) => (
-              <ul>
-                <li key={v.id.toString()}>
-                  <h1 className="text-2xl my-2 font-bold">Vendor {i}:</h1> Balance: {v.balance} ||
-                  TxCount: {v.transactions.length} || Unique Users: {v.userCount}
-                </li>
-              </ul>
+              <li className="mx-2" key={v.id.toString()}>
+                <h1 className="text-2xl my-2 font-bold">Vendor {i}:</h1> Balance: {v.balance} ||
+                TxCount: {v.transactions.length} || Unique Users: {v.userCount}
+              </li>
             ))
           ) : (
             <Spinner />

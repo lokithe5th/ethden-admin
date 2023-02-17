@@ -6,7 +6,7 @@ import React from 'react'
 export default function Footer() {
   return (
     <div className="min-h-0 p-5 flex justify-between items-center flex-col sm:flex-row gap-4">
-      <div></div>
+      <div />
       <div>
         <ul className="menu menu-horizontal px-1">
           <div className="flex items-center text-black gap-2 text-sm">
