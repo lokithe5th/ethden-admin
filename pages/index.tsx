@@ -15,8 +15,6 @@ const Home: NextPage = () => {
       <Header />
 
       <div className="flex items-center flex-col flex-grow">
-        {/* <Balance /> */}
-        {/* <Search /> */}
         <Vendors />
       </div>
       <Footer />

@@ -4,6 +4,7 @@ import { ERC20__factory } from '@/app/contracts'
 import Balance from '../components/Balance'
 import Search from '../components/Search'
 import _ from 'lodash'
+import Spinner from './Spinner'
 
 export interface Vendor {
   address: string
@@ -16,73 +17,38 @@ export interface Vendor {
 }
 
 const Vendors = () => {
+  const [vendorData, setVendorData] = useState<Vendor[]>()
+
   const provider = new ethers.providers.JsonRpcProvider('https://zksync2-testnet.zksync.dev')
-  const signer = new ethers.Wallet(
-    '0x6f72a2f8a8ef4b4c9fa04b79a6c034dbbcd462c439876f2959408c95d3bd4fb9',
-    provider
-  )
+  const signer = new ethers.Wallet(ethers.Wallet.createRandom(), provider)
   const buidlTokenAddress = '0xf551954D449eA3Ae4D6A2656a42d9B9081B137b4'
   const vendorAddresses = [
     '0x0dc01C03207fB73937B4aC88d840fBBB32e8026d',
     '0x7EBa38e027Fa14ecCd87B8c56a49Fa75E04e7B6e',
   ]
 
-  let vendors: Vendor[] = []
-
+  // Typesafe interface via typechain
   const buidlContract = ERC20__factory.connect(buidlTokenAddress, signer)
 
-  //Get the buidl contract BUIDL balance.
-  const [vendorData, setVendorData] = useState<Vendor[]>()
-  const [loaded, setLoaded] = useState<boolean>()
+  // Event listener
+  const update = buidlContract.on('Transfer', async () => {})
 
+  // Initialize data
   useEffect(() => {
     getTransactions()
   }, [])
 
-  buidlContract.on('Transfer', async () => {
-    if (vendorData) {
-      const block = await provider.getBlockNumber()
-      await updateTransactions(block - 1, vendorData)
-    }
-  })
+  // Update on event listener
+  useEffect(() => {
+    getTransactions()
+  }, [update])
 
-  async function updateTransactions(lastCurrentBlock: number, vendors: Vendor[]) {
-    const bFilter = buidlContract.filters.Transfer()
-    const block = await provider.getBlockNumber()
-
-    const transfers = await buidlContract.queryFilter(bFilter, lastCurrentBlock, block)
-
-    let transferCount = 0
-
-    for (let t of transfers) {
-      if (vendorAddresses.includes(t.args.to)) {
-        transferCount++
-      }
-    }
-
-    for (let t of transfers) {
-      for (let v of vendors) {
-        if (t.args.to == v.address) {
-          v.transactions.push(t)
-        }
-      }
-    }
-
-    for (let i = 0; i < vendors.length; i++) {
-      const v1uniq = _.uniqBy(vendors[i].transactions, 'args.from')
-      vendors[i].userCount = v1uniq.length
-    }
-
-    vendors[0].totalOrders += transferCount
-
-    localStorage.setItem('data', JSON.stringify(vendors))
-
-    setVendorData(vendors)
-  }
-
+  // Fetches and buckets transfer events
   async function getTransactions() {
+    let vendors: Vendor[] = []
+
     for (let i = 0; i < vendorAddresses.length; i++) {
-      let balance = (await buidlContract.balanceOf(vendorAddresses[i])).toNumber()
+      let balance = (await buidlContract.balanceOf(vendorAddresses[i])).toNumber() / 100
       vendors.push({
         address: vendorAddresses[i],
         id: i,
@@ -116,10 +82,7 @@ const Vendors = () => {
       vendors[0].totalOrders += ordersPerVendor
     }
 
-    localStorage.setItem('data', JSON.stringify(vendors))
     vendors[0].currentToBlock = block
-
-    setLoaded(true)
     setVendorData(vendors)
   }
 
@@ -129,14 +92,18 @@ const Vendors = () => {
       <Search />
       <div className="w-full p-4 flex flex-col rounded-2xl bg-blue-900 text-white min-h-full">
         <div>
-          {vendorData
-            ? vendorData.map((v, i) => (
+          {vendorData ? (
+            vendorData.map((v, i) => (
+              <ul>
                 <li key={v.id.toString()}>
-                  Vendor {i}: Balance: {v.balance / 100} | TxCount: {v.transactions.length} | Unique
-                  Users: {v.userCount}
+                  <h1 className="text-2xl my-2 font-bold">Vendor {i}:</h1> Balance: {v.balance} ||
+                  TxCount: {v.transactions.length} || Unique Users: {v.userCount}
                 </li>
-              ))
-            : 'Loading'}
+              </ul>
+            ))
+          ) : (
+            <Spinner />
+          )}
         </div>
       </div>
     </>
