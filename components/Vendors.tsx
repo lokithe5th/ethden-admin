@@ -60,7 +60,7 @@ const Vendors = () => {
 
   // Event listener
   buidlContract.on('Transfer', async () => {
-    if (vendorData == undefined) {
+    if (vendorData === undefined) {
       getTx()
     } else {
       updateTx(vendorData[0].currentToBlock, vendorData)
@@ -174,7 +174,10 @@ const Vendors = () => {
               <tbody>
                 {vendorData
                   ? vendorData.map((v, i) => (
-                      <tr className="bg-white border-b dark:bg-gray-900 dark:border-gray-700">
+                      <tr
+                        key={v.id.toString()}
+                        className="bg-white border-b dark:bg-gray-900 dark:border-gray-700"
+                      >
                         <th
                           scope="row"
                           className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
