@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { ethers } from 'ethers'
 import { ERC20__factory } from '@/interfaces/contracts'
 import Balance from '../components/Balance'
-import Search from '../components/Search'
 import _ from 'lodash'
 import Spinner from './Spinner'
 
@@ -19,8 +18,11 @@ export interface Vendor {
 const Vendors = () => {
   const [vendorData, setVendorData] = useState<Vendor[]>()
 
+  // Currently, only one environment is supported.
   const provider = new ethers.providers.JsonRpcProvider('https://zksync2-testnet.zksync.dev')
+
   const signer = new ethers.Wallet(ethers.Wallet.createRandom(), provider)
+
   const buidlTokenAddress = '0xf551954D449eA3Ae4D6A2656a42d9B9081B137b4'
   const vendorAddresses = [
     '0x0dc01C03207fB73937B4aC88d840fBBB32e8026d',
@@ -31,17 +33,14 @@ const Vendors = () => {
   const buidlContract = ERC20__factory.connect(buidlTokenAddress, signer)
 
   // Event listener
-  const update = buidlContract.on('Transfer', async () => {})
+  buidlContract.on('Transfer', async () => {
+    getTransactions()
+  })
 
   // Initialize data
   useEffect(() => {
     getTransactions()
-  })
-
-  // Update on event listener
-  useEffect(() => {
-    getTransactions()
-  }, [update])
+  }, [])
 
   // Fetches and buckets transfer events
   async function getTransactions() {
@@ -89,15 +88,16 @@ const Vendors = () => {
   return (
     <>
       <Balance vendorData={vendorData} />
-      <Search />
-      <div className="w-full p-4 flex flex-col rounded-2xl bg-blue-900 text-white min-h-full">
+      <div className="w-full p-4 flex flex-col rounded-2xl bg-blue-900 text-white min-h-full mt-2">
         <div>
           {vendorData ? (
             vendorData.map((v, i) => (
-              <li className="mx-2" key={v.id.toString()}>
-                <h1 className="text-2xl my-2 font-bold">Vendor {i}:</h1> Balance: {v.balance} ||
-                TxCount: {v.transactions.length} || Unique Users: {v.userCount}
-              </li>
+              <ul>
+                <li className="mx-2" key={v.id.toString()}>
+                  <h1 className="text-2xl my-2 font-bold">Vendor {i}:</h1> Balance: {v.balance} ||
+                  TxCount: {v.transactions.length} || Unique Users: {v.userCount}{' '}
+                </li>
+              </ul>
             ))
           ) : (
             <Spinner />
