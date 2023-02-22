@@ -6,6 +6,7 @@ import _ from 'lodash'
 import Spinner from './Spinner'
 
 export interface Vendor {
+  name: string
   address: string
   id: number
   transactions: object[]
@@ -19,14 +20,39 @@ const Vendors = () => {
   const [vendorData, setVendorData] = useState<Vendor[]>()
 
   // Currently, only one environment is supported.
-  const provider = new ethers.providers.JsonRpcProvider('https://zksync2-testnet.zksync.dev')
+  const provider = new ethers.providers.JsonRpcProvider('https://zksync2-mainnet.zksync.io')
 
   const signer = new ethers.Wallet(ethers.Wallet.createRandom(), provider)
 
-  const buidlTokenAddress = '0xf551954D449eA3Ae4D6A2656a42d9B9081B137b4'
+  const buidlTokenAddress = '0xEd0994232328B470d44a88485B430b8bA965D434'
   const vendorAddresses = [
-    '0x0dc01C03207fB73937B4aC88d840fBBB32e8026d',
-    '0x7EBa38e027Fa14ecCd87B8c56a49Fa75E04e7B6e',
+    {
+      name: 'Pepsi Roadhouse Concessions (1)',
+      address: '0x2406Fb7143f22F221e74524aA25bd0F7FFA6bA66',
+    },
+    {
+      name: 'Pepsi Roadhouse Concessions (2)',
+      address: '0x8CE80Adea55F41D874398b2EF80c31216B929521',
+    },
+    { name: 'The Cafeteria (1)', address: '0xDA55D516b2438645e0FC31aC448d0900aD78045f' },
+    { name: 'The Cafeteria (2)', address: '0xdCE10742Ab93587DF464935C0063b1ba5db02968' },
+    { name: 'Stadium Grill (1)', address: '0xe664c6454300f48942239605810178221b34959f' },
+    { name: 'Stadium Grill (2)', address: '0xc4779195760540E2CBF73d855695D8537b1f545E' },
+    { name: 'BBB Lounge (1)', address: '0xa65150551B77719E31eBfe395c3f0A009aD0c19e' },
+    { name: 'Gourmet Coffee Lounge (1)', address: '0xBb101CBEE74549768E8495877109B0A788245B09' },
+    { name: 'Network Lounge (1)', address: '0xf5d2d68377725aC40719Fa1AEd5f9cF1457D0BE7' },
+    { name: 'BUIDLathon bodega (1)', address: '0x642cfD51f29E383fCB9f726eC0CCD0B03Cf723Cb' },
+    { name: 'Mainstage (1)', address: '0x9BFCD4dB79a3D513f28aEcaff1b962F163bA57BD' },
+    { name: 'Original by Greeks (1)', address: '0x837717d8fCaF2ec72c132FEe49f4BE3Ddf27b501' },
+    {
+      name: 'Elevation 5280 Smokehouse (1)',
+      address: '0xfe7835f82181db55236BC998234A2C6c7030Ba82',
+    },
+    { name: 'High Society Pizza (1)', address: '0x41436B6F50DcfCa53b357C81a9D6C88349cC8e19' },
+    { name: 'Downtown Fingers (1)', address: '0x71cFB7Ff2cb34c9d86D02BBC0967264108c19FdB' },
+    { name: 'Denver Taco Truck (1)', address: '0x9598cd29af4368d49270DB724E7511CCcD2e4be8' },
+    { name: 'Cheese Love Grill (1)', address: '0x8360F4F9Ba02a131757EAFECE17bc814313a61de' },
+    { name: 'Arcade 1', address: '0x31edD5A882583CBf3A712E98E100Ef34aD6934b4' },
   ]
 
   // Typesafe interface via typechain
@@ -34,22 +60,27 @@ const Vendors = () => {
 
   // Event listener
   buidlContract.on('Transfer', async () => {
-    getTransactions()
+    if (vendorData == undefined) {
+      getTx()
+    } else {
+      updateTx(vendorData[0].currentToBlock, vendorData)
+    }
   })
 
   // Initialize data
   useEffect(() => {
-    getTransactions()
+    getTx()
   }, [])
 
   // Fetches and buckets transfer events
-  async function getTransactions() {
+  async function getTx() {
     let vendors: Vendor[] = []
 
     for (let i = 0; i < vendorAddresses.length; i++) {
-      let balance = (await buidlContract.balanceOf(vendorAddresses[i])).toNumber() / 100
+      let balance = (await buidlContract.balanceOf(vendorAddresses[i].address)).toNumber() / 100
       vendors.push({
-        address: vendorAddresses[i],
+        name: vendorAddresses[i].name,
+        address: vendorAddresses[i].address,
         id: i,
         transactions: [],
         balance: balance,
@@ -85,23 +116,79 @@ const Vendors = () => {
     setVendorData(vendors)
   }
 
+  // Fetches and buckets transfer events
+  async function updateTx(lastBlock: number, vendors: Vendor[]) {
+    console.log('uhhh TWO')
+    for (let i = 0; i < vendorAddresses.length; i++) {
+      const balance = (await buidlContract.balanceOf(vendorAddresses[i].address)).toNumber() / 100
+      vendors[i].balance = balance
+    }
+
+    const bFilter = buidlContract.filters.Transfer()
+    const block = await provider.getBlockNumber()
+
+    const transfers = await buidlContract.queryFilter(bFilter, lastBlock, block)
+
+    let transferCount = 0
+
+    for (let t of transfers) {
+      for (let v of vendors) {
+        if (t.args.to === v.address) {
+          transferCount++
+          v.transactions.push(t)
+        }
+      }
+    }
+
+    for (let i = 0; i < vendors.length; i++) {
+      const v1uniq = _.uniqBy(vendors[i].transactions, 'args.from')
+      vendors[i].userCount = v1uniq.length
+
+      /* const ordersPerVendor = vendors[i].transactions.length */
+    }
+    vendors[0].totalOrders += transferCount
+    vendors[0].currentToBlock = block
+    setVendorData(vendors)
+  }
+
   return (
     <>
       <Balance vendorData={vendorData} />
       <div className="w-full p-4 flex flex-col rounded-2xl bg-blue-900 text-white min-h-full mt-2">
         <div>
-          {vendorData ? (
-            vendorData.map((v, i) => (
-              <ul>
-                <li className="mx-2" key={v.id.toString()}>
-                  <h1 className="text-2xl my-2 font-bold">Vendor {i}:</h1> Balance: {v.balance} ||
-                  TxCount: {v.transactions.length} || Unique Users: {v.userCount}{' '}
-                </li>
-              </ul>
-            ))
-          ) : (
-            <Spinner />
-          )}
+          <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
+            <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+              <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                <tr>
+                  <th scope="col" className="px-6 py-3">
+                    Vendor
+                  </th>
+                  <th scope="col" className="px-6 py-3">
+                    Balance
+                  </th>
+                  <th scope="col" className="px-6 py-3">
+                    Users
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {vendorData
+                  ? vendorData.map((v, i) => (
+                      <tr className="bg-white border-b dark:bg-gray-900 dark:border-gray-700">
+                        <th
+                          scope="row"
+                          className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
+                        >
+                          {v.name}
+                        </th>
+                        <td className="px-6 py-4">{v.balance}</td>
+                        <td className="px-6 py-4">{v.userCount}</td>
+                      </tr>
+                    ))
+                  : null}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </>
