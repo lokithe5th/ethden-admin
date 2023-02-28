@@ -4,16 +4,19 @@ import { ERC20__factory } from '@/interfaces/contracts'
 import Balance from '../components/Balance'
 import _ from 'lodash'
 import Spinner from './Spinner'
+import { Alert, Button, Col, Menu, Row } from "antd";
 
 export interface Vendor {
   name: string
   address: string
   id: number
+  _id: string
   transactions: object[]
   balance: number
   userCount: number
   totalOrders: number
   currentToBlock: number
+  payoutsReceived: number
 }
 
 const Vendors = () => {
@@ -25,6 +28,22 @@ const Vendors = () => {
   const signer = new ethers.Wallet(ethers.Wallet.createRandom(), provider)
 
   const buidlTokenAddress = '0xEd0994232328B470d44a88485B430b8bA965D434'
+
+  const vendorArray = async():Promise<Vendor[]> => {
+    const res = await fetch('http://localhost:8000/vendors/');
+    if (res.ok) {
+      const data = await res.json();
+      console.log(data);
+      return data;
+    } else {
+      return [];
+    }
+    // return await response.json();
+  }
+
+  let vendorAddresses:Vendor[] = [];
+
+  /*
   const vendorAddresses = [
     {
       name: 'Pepsi Roadhouse Concessions (1)',
@@ -53,7 +72,7 @@ const Vendors = () => {
     { name: 'Denver Taco Truck (1)', address: '0x9598cd29af4368d49270DB724E7511CCcD2e4be8' },
     { name: 'Cheese Love Grill (1)', address: '0x8360F4F9Ba02a131757EAFECE17bc814313a61de' },
     { name: 'Arcade 1', address: '0x31edD5A882583CBf3A712E98E100Ef34aD6934b4' },
-  ]
+  ] */
 
   // Typesafe interface via typechain
   const buidlContract = ERC20__factory.connect(buidlTokenAddress, signer)
@@ -67,14 +86,10 @@ const Vendors = () => {
     }
   })
 
-  // Initialize data
-  useEffect(() => {
-    getTx()
-  }, [])
-
   // Fetches and buckets transfer events
   async function getTx() {
     let vendors: Vendor[] = []
+    vendorAddresses = await vendorArray();
 
     for (let i = 0; i < vendorAddresses.length; i++) {
       let balance = (await buidlContract.balanceOf(vendorAddresses[i].address)).toNumber() / 100
@@ -82,11 +97,13 @@ const Vendors = () => {
         name: vendorAddresses[i].name,
         address: vendorAddresses[i].address,
         id: i,
+        _id: vendorAddresses[i]._id,
         transactions: [],
         balance: balance,
         userCount: 0,
         totalOrders: 0,
         currentToBlock: 0,
+        payoutsReceived: vendorAddresses[i].payoutsReceived
       })
     }
 
@@ -151,6 +168,44 @@ const Vendors = () => {
     setVendorData(vendors)
   }
 
+  const recordPayout = async(id:number, _id:string, newPayoutsReceived:any) => {
+    let content:any = {
+      payoutsReceived: newPayoutsReceived
+    }
+
+    console.log(content);
+
+    const response = await fetch(`http://localhost:8000/vendors/${_id}`, {
+      method: 'PUT',
+      body: JSON.stringify(content),
+      headers: {'Content-Type': 'application/json; charset=UTF-8'} });
+    
+    if (response.ok) {
+      let updatedVendors:Vendor[] = vendorData ? vendorData: [];
+      updatedVendors[id] = {
+        name: vendorAddresses[id].name,
+        address: vendorAddresses[id].address,
+        id: id,
+        _id: vendorAddresses[id]._id,
+        transactions: [],
+        balance: 0,
+        userCount: updatedVendors[id].userCount,
+        totalOrders: updatedVendors[id].totalOrders,
+        currentToBlock: updatedVendors[id].currentToBlock,
+        payoutsReceived: newPayoutsReceived
+      }
+      setVendorData(updatedVendors);
+      
+      alert("Updated! Please allow some time for the payout to update");
+      await getTx();
+     }
+  }
+
+    // Initialize data
+  useEffect(() => {
+    getTx()
+  }, [])
+
   return (
     <>
       <Balance vendorData={vendorData} />
@@ -165,6 +220,12 @@ const Vendors = () => {
                   </th>
                   <th scope="col" className="px-6 py-3">
                     Balance
+                  </th>
+                  <th scope="col" className='px-6 py-3'>
+                    Payouts Received
+                  </th>
+                  <th scope="col" className='px-3 py-3'>
+                    Pay
                   </th>
                   <th scope="col" className="px-6 py-3">
                     Users
@@ -184,7 +245,9 @@ const Vendors = () => {
                         >
                           {v.name}
                         </th>
-                        <td className="px-6 py-4">{v.balance}</td>
+                        <td className="px-6 py-4">{v.balance - v.payoutsReceived}</td>
+                        <td className='px-6 py-4'>{v.payoutsReceived}</td>
+                        <td className='px-6 py-4'><Button type="primary" onClick={() => {recordPayout(v.id, v._id, (v.balance - v.payoutsReceived))}}>Payout</Button></td>
                         <td className="px-6 py-4">{v.userCount}</td>
                       </tr>
                     ))
