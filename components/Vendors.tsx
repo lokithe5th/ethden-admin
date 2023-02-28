@@ -131,6 +131,7 @@ const Vendors = () => {
 
     vendors[0].currentToBlock = block
     setVendorData(vendors)
+    console.log(vendorAddresses);
   }
 
   // Fetches and buckets transfer events
@@ -173,20 +174,19 @@ const Vendors = () => {
       payoutsReceived: newPayoutsReceived
     }
 
-    console.log(content);
-
     const response = await fetch(`http://localhost:8000/vendors/${_id}`, {
       method: 'PUT',
       body: JSON.stringify(content),
       headers: {'Content-Type': 'application/json; charset=UTF-8'} });
     
     if (response.ok) {
+      console.log("VendorData: ", vendorData)
       let updatedVendors:Vendor[] = vendorData ? vendorData: [];
       updatedVendors[id] = {
-        name: vendorAddresses[id].name,
-        address: vendorAddresses[id].address,
+        name: updatedVendors[id].name,
+        address: updatedVendors[id].address,
         id: id,
-        _id: vendorAddresses[id]._id,
+        _id: updatedVendors[id]._id,
         transactions: [],
         balance: 0,
         userCount: updatedVendors[id].userCount,
@@ -194,6 +194,7 @@ const Vendors = () => {
         currentToBlock: updatedVendors[id].currentToBlock,
         payoutsReceived: newPayoutsReceived
       }
+
       setVendorData(updatedVendors);
       
       alert("Updated! Please allow some time for the payout to update");
@@ -201,7 +202,24 @@ const Vendors = () => {
      }
   }
 
-    // Initialize data
+  const payOut = (id:number) => {
+    let vendors:Vendor[] = vendorData ? vendorData : [];
+    const hasBalance = vendors[id].balance - vendors[id].payoutsReceived;
+    let button;
+    if (hasBalance) {
+      button = <Button type="primary" onClick={() => {recordPayout(vendors[id].id, vendors[id]._id, (vendors[id].balance - vendors[id].payoutsReceived))}}>Payout</Button>;
+    } else {
+      button = <p>Nothing to pay</p>;
+    }
+
+    return (
+      <div>
+        {button}
+      </div>
+    );
+  }
+
+    // Initialize data <Button type="primary" onClick={() => {recordPayout(v.id, v._id, (v.balance - v.payoutsReceived))}}>Payout</Button>
   useEffect(() => {
     getTx()
   }, [])
@@ -247,7 +265,7 @@ const Vendors = () => {
                         </th>
                         <td className="px-6 py-4">{v.balance - v.payoutsReceived}</td>
                         <td className='px-6 py-4'>{v.payoutsReceived}</td>
-                        <td className='px-6 py-4'><Button type="primary" onClick={() => {recordPayout(v.id, v._id, (v.balance - v.payoutsReceived))}}>Payout</Button></td>
+                        <td className='px-6 py-4'>{payOut(v.id)}</td>
                         <td className="px-6 py-4">{v.userCount}</td>
                       </tr>
                     ))
