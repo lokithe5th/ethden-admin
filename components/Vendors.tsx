@@ -38,41 +38,9 @@ const Vendors = () => {
     } else {
       return [];
     }
-    // return await response.json();
   }
 
   let vendorAddresses:Vendor[] = [];
-
-  /*
-  const vendorAddresses = [
-    {
-      name: 'Pepsi Roadhouse Concessions (1)',
-      address: '0x2406Fb7143f22F221e74524aA25bd0F7FFA6bA66',
-    },
-    {
-      name: 'Pepsi Roadhouse Concessions (2)',
-      address: '0x8CE80Adea55F41D874398b2EF80c31216B929521',
-    },
-    { name: 'The Cafeteria (1)', address: '0xDA55D516b2438645e0FC31aC448d0900aD78045f' },
-    { name: 'The Cafeteria (2)', address: '0xdCE10742Ab93587DF464935C0063b1ba5db02968' },
-    { name: 'Stadium Grill (1)', address: '0xe664c6454300f48942239605810178221b34959f' },
-    { name: 'Stadium Grill (2)', address: '0xc4779195760540E2CBF73d855695D8537b1f545E' },
-    { name: 'BBB Lounge (1)', address: '0xa65150551B77719E31eBfe395c3f0A009aD0c19e' },
-    { name: 'Gourmet Coffee Lounge (1)', address: '0xBb101CBEE74549768E8495877109B0A788245B09' },
-    { name: 'Network Lounge (1)', address: '0xf5d2d68377725aC40719Fa1AEd5f9cF1457D0BE7' },
-    { name: 'BUIDLathon bodega (1)', address: '0x642cfD51f29E383fCB9f726eC0CCD0B03Cf723Cb' },
-    { name: 'Mainstage (1)', address: '0x9BFCD4dB79a3D513f28aEcaff1b962F163bA57BD' },
-    { name: 'Original by Greeks (1)', address: '0x837717d8fCaF2ec72c132FEe49f4BE3Ddf27b501' },
-    {
-      name: 'Elevation 5280 Smokehouse (1)',
-      address: '0xfe7835f82181db55236BC998234A2C6c7030Ba82',
-    },
-    { name: 'High Society Pizza (1)', address: '0x41436B6F50DcfCa53b357C81a9D6C88349cC8e19' },
-    { name: 'Downtown Fingers (1)', address: '0x71cFB7Ff2cb34c9d86D02BBC0967264108c19FdB' },
-    { name: 'Denver Taco Truck (1)', address: '0x9598cd29af4368d49270DB724E7511CCcD2e4be8' },
-    { name: 'Cheese Love Grill (1)', address: '0x8360F4F9Ba02a131757EAFECE17bc814313a61de' },
-    { name: 'Arcade 1', address: '0x31edD5A882583CBf3A712E98E100Ef34aD6934b4' },
-  ] */
 
   // Typesafe interface via typechain
   const buidlContract = ERC20__factory.connect(buidlTokenAddress, signer)
@@ -188,14 +156,14 @@ const Vendors = () => {
         id: id,
         _id: updatedVendors[id]._id,
         transactions: [],
-        balance: 0,
+        balance: updatedVendors[id].balance,
         userCount: updatedVendors[id].userCount,
         totalOrders: updatedVendors[id].totalOrders,
         currentToBlock: updatedVendors[id].currentToBlock,
         payoutsReceived: newPayoutsReceived
       }
 
-      setVendorData(updatedVendors);
+      setVendorData([...updatedVendors]);
       
       alert("Updated! Please allow some time for the payout to update");
       await getTx();
@@ -206,8 +174,8 @@ const Vendors = () => {
     let vendors:Vendor[] = vendorData ? vendorData : [];
     const hasBalance = vendors[id].balance - vendors[id].payoutsReceived;
     let button;
-    if (hasBalance) {
-      button = <Button type="primary" onClick={() => {recordPayout(vendors[id].id, vendors[id]._id, (vendors[id].balance - vendors[id].payoutsReceived))}}>Payout</Button>;
+    if (hasBalance > 0) {
+      button = <Button type="primary" block onClick={() => {recordPayout(vendors[id].id, vendors[id]._id, (vendors[id].balance - vendors[id].payoutsReceived))}}>Payout</Button>;
     } else {
       button = <p>Nothing to pay</p>;
     }
@@ -219,7 +187,6 @@ const Vendors = () => {
     );
   }
 
-    // Initialize data <Button type="primary" onClick={() => {recordPayout(v.id, v._id, (v.balance - v.payoutsReceived))}}>Payout</Button>
   useEffect(() => {
     getTx()
   }, [])
