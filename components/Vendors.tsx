@@ -33,7 +33,6 @@ const Vendors = () => {
     const res = await fetch('http://localhost:8000/vendors/');
     if (res.ok) {
       const data = await res.json();
-      console.log(data);
       return data;
     } else {
       return [];
@@ -47,11 +46,12 @@ const Vendors = () => {
 
   // Event listener
   buidlContract.on('Transfer', async () => {
-    if (vendorData === undefined) {
+/*    if (vendorData === undefined) {
       getTx()
     } else {
       updateTx(vendorData[0].currentToBlock, vendorData)
-    }
+    } */
+    getTx();
   })
 
   // Fetches and buckets transfer events
@@ -98,8 +98,7 @@ const Vendors = () => {
     }
 
     vendors[0].currentToBlock = block
-    setVendorData(vendors)
-    console.log(vendorAddresses);
+    setVendorData([...vendors])
   }
 
   // Fetches and buckets transfer events
@@ -148,7 +147,6 @@ const Vendors = () => {
       headers: {'Content-Type': 'application/json; charset=UTF-8'} });
     
     if (response.ok) {
-      console.log("VendorData: ", vendorData)
       let updatedVendors:Vendor[] = vendorData ? vendorData: [];
       updatedVendors[id] = {
         name: updatedVendors[id].name,
@@ -164,9 +162,7 @@ const Vendors = () => {
       }
 
       setVendorData([...updatedVendors]);
-      
       alert("Updated! Please allow some time for the payout to update");
-      await getTx();
      }
   }
 
@@ -175,7 +171,9 @@ const Vendors = () => {
     const hasBalance = vendors[id].balance - vendors[id].payoutsReceived;
     let button;
     if (hasBalance > 0) {
-      button = <Button type="primary" className="text-black" color="primary" block onClick={() => {recordPayout(vendors[id].id, vendors[id]._id, (vendors[id].balance - vendors[id].payoutsReceived))}}>Payout</Button>;
+      button = <Button type="primary" className="text-black" color="primary" block onClick={
+        () => {recordPayout(vendors[id].id, vendors[id]._id, (vendors[id].balance - vendors[id].payoutsReceived))}
+      }>Payout</Button>;
     } else {
       button = <p>Nothing to pay</p>;
     }
@@ -187,12 +185,15 @@ const Vendors = () => {
     );
   }
 
+  // Disable this in production, BEWARE!
   const resetPayouts = async() => {
-    let vendors:Vendor[] = vendorData ? vendorData : [];
-
-    for (let i = 0; i < vendors.length; i++) {
-      await recordPayout(i, vendors[i]._id, 0);
-    }
+    // Replace `1` with auth key
+    const response = await fetch(`http://localhost:8000/vendors/resetPayouts/${1}`, {
+      method: 'PUT',
+      body: JSON.stringify({}),
+      headers: {'Content-Type': 'application/json; charset=UTF-8'} });
+    // We force reload as all of the state will change
+    window.location.reload();
   }
 
   useEffect(() => {
@@ -216,7 +217,7 @@ const Vendors = () => {
                   </th>
                   <th scope="col" className='px-6 py-3'>
                     Payouts Received
-                    <Button className="text-black" type="primary" onClick={ resetPayouts }>Reset</Button>
+                    <Button className="text-black" type="primary" onClick={ () => resetPayouts() }>Reset</Button>
                   </th>
                   <th scope="col" className='px-3 py-3'>
                     Pay
