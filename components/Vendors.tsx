@@ -30,7 +30,7 @@ const Vendors = () => {
   const buidlTokenAddress = '0xEd0994232328B470d44a88485B430b8bA965D434'
 
   const vendorArray = async():Promise<Vendor[]> => {
-    const res = await fetch('http://localhost:8000/vendors/');
+    const res = await fetch('https://ethdenver-admin-backend.herokuapp.com/vendors/');
     if (res.ok) {
       const data = await res.json();
       return data;
@@ -141,7 +141,7 @@ const Vendors = () => {
       payoutsReceived: newPayoutsReceived
     }
 
-    const response = await fetch(`http://localhost:8000/vendors/${_id}`, {
+    const response = await fetch(`https://ethdenver-admin-backend.herokuapp.com/vendors/${_id}`, {
       method: 'PUT',
       body: JSON.stringify(content),
       headers: {'Content-Type': 'application/json; charset=UTF-8'} });
@@ -188,7 +188,7 @@ const Vendors = () => {
   // Disable this in production, BEWARE!
   const resetPayouts = async() => {
     // Replace `1` with auth key
-    const response = await fetch(`http://localhost:8000/vendors/resetPayouts/${1}`, {
+    const response = await fetch(`https://ethdenver-admin-backend.herokuapp.com/vendors/resetPayouts/${1}`, {
       method: 'PUT',
       body: JSON.stringify({}),
       headers: {'Content-Type': 'application/json; charset=UTF-8'} });
