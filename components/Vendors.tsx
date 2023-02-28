@@ -175,7 +175,7 @@ const Vendors = () => {
     const hasBalance = vendors[id].balance - vendors[id].payoutsReceived;
     let button;
     if (hasBalance > 0) {
-      button = <Button type="primary" block onClick={() => {recordPayout(vendors[id].id, vendors[id]._id, (vendors[id].balance - vendors[id].payoutsReceived))}}>Payout</Button>;
+      button = <Button type="primary" className="text-black" color="primary" block onClick={() => {recordPayout(vendors[id].id, vendors[id]._id, (vendors[id].balance - vendors[id].payoutsReceived))}}>Payout</Button>;
     } else {
       button = <p>Nothing to pay</p>;
     }
@@ -185,6 +185,14 @@ const Vendors = () => {
         {button}
       </div>
     );
+  }
+
+  const resetPayouts = async() => {
+    let vendors:Vendor[] = vendorData ? vendorData : [];
+
+    for (let i = 0; i < vendors.length; i++) {
+      await recordPayout(i, vendors[i]._id, 0);
+    }
   }
 
   useEffect(() => {
@@ -208,6 +216,7 @@ const Vendors = () => {
                   </th>
                   <th scope="col" className='px-6 py-3'>
                     Payouts Received
+                    <Button className="text-black" type="primary" onClick={ resetPayouts }>Reset</Button>
                   </th>
                   <th scope="col" className='px-3 py-3'>
                     Pay
