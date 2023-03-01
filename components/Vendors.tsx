@@ -127,22 +127,6 @@ const Vendors = () => {
     
     if (response.ok) {
       setVendorData([...vendors]);
-/*      let updatedVendors:Vendor[] = vendorData ? vendorData: [];
-      updatedVendors[id] = {
-        name: updatedVendors[id].name,
-        address: updatedVendors[id].address,
-        id: id,
-        _id: updatedVendors[id]._id,
-        transactions: [],
-        currentBalance: updatedVendors[id].currentBalance / 100,
-        userCount: updatedVendors[id].userCount,
-        totalOrders: updatedVendors[id].totalOrders,
-        currentToBlock: updatedVendors[id].currentToBlock,
-        payoutsReceived: newPayoutsReceived
-*/
-      }
-
-      // setVendorData([...updatedVendors]);
       alert("Updated! Please allow some time for the payout to update");
      }
   }
