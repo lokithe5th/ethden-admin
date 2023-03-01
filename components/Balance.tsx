@@ -19,7 +19,7 @@ function Balance(props: { vendorData: Vendor[] | undefined }) {
         <h6 className="tracking-widest md:text-sm">Total Earned</h6>
         {props.vendorData !== undefined ? (
           <text className="text-5xl font-semibold py-3 text-white md:text-7xl">
-            ${_.sumBy(props.vendorData, 'balance').toFixed(2)}
+            ${_.sumBy(props.vendorData, 'currentBalance').toFixed(2)}
           </text>
         ) : null}
       </div>

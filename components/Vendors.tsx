@@ -12,7 +12,7 @@ export interface Vendor {
   id: number
   _id: string
   transactions: object[]
-  balance: number
+  currentBalance: number
   userCount: number
   totalOrders: number
   currentToBlock: number
@@ -46,28 +46,23 @@ const Vendors = () => {
 
   // Event listener
   buidlContract.on('Transfer', async () => {
-/*    if (vendorData === undefined) {
-      getTx()
-    } else {
-      updateTx(vendorData[0].currentToBlock, vendorData)
-    } */
-    getTx();
+    await getTx();
   })
 
   // Fetches and buckets transfer events
   async function getTx() {
     let vendors: Vendor[] = []
     vendorAddresses = await vendorArray();
+    console.log(vendorAddresses)
 
     for (let i = 0; i < vendorAddresses.length; i++) {
-      let balance = (await buidlContract.balanceOf(vendorAddresses[i].address)).toNumber() / 100
       vendors.push({
         name: vendorAddresses[i].name,
         address: vendorAddresses[i].address,
         id: i,
         _id: vendorAddresses[i]._id,
         transactions: [],
-        balance: balance,
+        currentBalance: vendorAddresses[i].currentBalance / 100,
         userCount: 0,
         totalOrders: 0,
         currentToBlock: 0,
@@ -101,47 +96,12 @@ const Vendors = () => {
     setVendorData([...vendors])
   }
 
-  // Fetches and buckets transfer events
-  async function updateTx(lastBlock: number, vendors: Vendor[]) {
-    console.log('uhhh TWO')
-    for (let i = 0; i < vendorAddresses.length; i++) {
-      const balance = (await buidlContract.balanceOf(vendorAddresses[i].address)).toNumber() / 100
-      vendors[i].balance = balance
-    }
-
-    const bFilter = buidlContract.filters.Transfer()
-    const block = await provider.getBlockNumber()
-
-    const transfers = await buidlContract.queryFilter(bFilter, lastBlock, block)
-
-    let transferCount = 0
-
-    for (let t of transfers) {
-      for (let v of vendors) {
-        if (t.args.to === v.address) {
-          transferCount++
-          v.transactions.push(t)
-        }
-      }
-    }
-
-    for (let i = 0; i < vendors.length; i++) {
-      const v1uniq = _.uniqBy(vendors[i].transactions, 'args.from')
-      vendors[i].userCount = v1uniq.length
-
-      /* const ordersPerVendor = vendors[i].transactions.length */
-    }
-    vendors[0].totalOrders += transferCount
-    vendors[0].currentToBlock = block
-    setVendorData(vendors)
-  }
-
   const recordPayout = async(id:number, _id:string, newPayoutsReceived:any) => {
     let content:any = {
       payoutsReceived: newPayoutsReceived
     }
 
-    const response = await fetch(`https://ethdenver-admin-backend.herokuapp.com/vendors/${_id}`, {
+    const response = await fetch(`https://ethdenver-admin-backend.herokuapp.com/vendors/${_id}`, { // 
       method: 'PUT',
       body: JSON.stringify(content),
       headers: {'Content-Type': 'application/json; charset=UTF-8'} });
@@ -154,7 +114,7 @@ const Vendors = () => {
         id: id,
         _id: updatedVendors[id]._id,
         transactions: [],
-        balance: updatedVendors[id].balance,
+        currentBalance: updatedVendors[id].currentBalance / 100,
         userCount: updatedVendors[id].userCount,
         totalOrders: updatedVendors[id].totalOrders,
         currentToBlock: updatedVendors[id].currentToBlock,
@@ -168,11 +128,11 @@ const Vendors = () => {
 
   const payOut = (id:number) => {
     let vendors:Vendor[] = vendorData ? vendorData : [];
-    const hasBalance = vendors[id].balance - vendors[id].payoutsReceived;
+    const hasBalance = vendors[id].currentBalance - vendors[id].payoutsReceived;
     let button;
     if (hasBalance > 0) {
       button = <Button type="primary" className="text-black" color="primary" block onClick={
-        () => {recordPayout(vendors[id].id, vendors[id]._id, (vendors[id].balance - vendors[id].payoutsReceived))}
+        () => {recordPayout(vendors[id].id, vendors[id]._id, (vendors[id].currentBalance - vendors[id].payoutsReceived))}
       }>Payout</Button>;
     } else {
       button = <p>Nothing to pay</p>;
@@ -183,6 +143,19 @@ const Vendors = () => {
         {button}
       </div>
     );
+  }
+
+  // Solve the Heroku sleep problem + keep balances up to date.
+  setInterval(async() => {
+    await pollBalances();
+    await getTx();
+  }, 300000); // every 5 minutes (300000)
+
+  async function pollBalances() {
+    await fetch(`https://ethdenver-admin-backend.herokuapp.com/vendors/updates/balances`, {
+    method: 'PUT',
+    body: JSON.stringify({}),
+    headers: {'Content-Type': 'application/json; charset=UTF-8'} });
   }
 
   // Disable this in production, BEWARE!
@@ -240,7 +213,7 @@ const Vendors = () => {
                         >
                           {v.name}
                         </th>
-                        <td className="px-6 py-4">{v.balance - v.payoutsReceived}</td>
+                        <td className="px-6 py-4">{v.currentBalance - v.payoutsReceived}</td>
                         <td className='px-6 py-4'>{v.payoutsReceived}</td>
                         <td className='px-6 py-4'>{payOut(v.id)}</td>
                         <td className="px-6 py-4">{v.userCount}</td>
