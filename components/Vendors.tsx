@@ -98,16 +98,36 @@ const Vendors = () => {
 
   const recordPayout = async(id:number, _id:string, newPayoutsReceived:any) => {
     let content:any = {
-      payoutsReceived: newPayoutsReceived
+      payoutsReceived: newPayoutsReceived,
     }
 
     const response = await fetch(`https://ethdenver-admin-backend.herokuapp.com/vendors/${_id}`, { // 
       method: 'PUT',
       body: JSON.stringify(content),
       headers: {'Content-Type': 'application/json; charset=UTF-8'} });
+
+    let vendors: Vendor[] = []
+      vendorAddresses = await vendorArray();
+      console.log(vendorAddresses)
+  
+      for (let i = 0; i < vendorAddresses.length; i++) {
+        vendors.push({
+          name: vendorAddresses[i].name,
+          address: vendorAddresses[i].address,
+          id: i,
+          _id: vendorAddresses[i]._id,
+          transactions: [],
+          currentBalance: vendorAddresses[i].currentBalance / 100,
+          userCount: 0,
+          totalOrders: 0,
+          currentToBlock: 0,
+          payoutsReceived: vendorAddresses[i].payoutsReceived
+        })
+      }
     
     if (response.ok) {
-      let updatedVendors:Vendor[] = vendorData ? vendorData: [];
+      setVendorData([...vendors]);
+/*      let updatedVendors:Vendor[] = vendorData ? vendorData: [];
       updatedVendors[id] = {
         name: updatedVendors[id].name,
         address: updatedVendors[id].address,
@@ -119,9 +139,10 @@ const Vendors = () => {
         totalOrders: updatedVendors[id].totalOrders,
         currentToBlock: updatedVendors[id].currentToBlock,
         payoutsReceived: newPayoutsReceived
+*/
       }
 
-      setVendorData([...updatedVendors]);
+      // setVendorData([...updatedVendors]);
       alert("Updated! Please allow some time for the payout to update");
      }
   }
