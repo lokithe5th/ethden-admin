@@ -27,7 +27,7 @@ const Vendors = () => {
 
   const signer = new ethers.Wallet(ethers.Wallet.createRandom(), provider)
 
-  const buidlTokenAddress = '0xEd0994232328B470d44a88485B430b8bA965D434'
+  const buidlTokenAddress = '0x1bbA25233556a7C3b41913F35A035916DbeD1664'
 
   const vendorArray = async():Promise<Vendor[]> => {
     const res = await fetch('https://ethdenver-admin-backend.herokuapp.com/vendors/');
