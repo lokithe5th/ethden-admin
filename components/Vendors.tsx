@@ -53,7 +53,7 @@ const Vendors = () => {
   async function getTx() {
     let vendors: Vendor[] = []
     vendorAddresses = await vendorArray();
-    console.log(vendorAddresses)
+    // console.log(vendorAddresses)
 
     for (let i = 0; i < vendorAddresses.length; i++) {
       vendors.push({
@@ -108,7 +108,7 @@ const Vendors = () => {
 
     let vendors: Vendor[] = []
       vendorAddresses = await vendorArray();
-      console.log(vendorAddresses)
+      // console.log(vendorAddresses)
   
       for (let i = 0; i < vendorAddresses.length; i++) {
         vendors.push({
@@ -184,8 +184,8 @@ const Vendors = () => {
       <div className="w-full p-4 flex flex-col rounded-2xl bg-blue-900 text-white min-h-full mt-2">
         <div>
           <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
-            <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-              <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+            <table className="w-full text-sm text-left text-gray-500 dark:text-gray-200">
+              <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-white">
                 <tr>
                   <th scope="col" className="px-6 py-3">
                     Vendor
@@ -195,7 +195,7 @@ const Vendors = () => {
                   </th>
                   <th scope="col" className='px-6 py-3'>
                     Payouts Received
-                    <Button className="text-black" type="primary" onClick={ () => resetPayouts() }>Reset</Button>
+                    <Button className="text-white" type="primary" onClick={ () => resetPayouts() }>Reset</Button>
                   </th>
                   <th scope="col" className='px-3 py-3'>
                     Pay
@@ -210,7 +210,7 @@ const Vendors = () => {
                   ? vendorData.map((v, i) => (
                       <tr
                         key={v.id.toString()}
-                        className="bg-white border-b dark:bg-gray-900 dark:border-gray-700"
+                        className="bg-white border-b dark:bg-gray-400 dark:border-gray-700"
                       >
                         <th
                           scope="row"
